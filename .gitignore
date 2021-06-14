@@ -105,3 +105,11 @@ dist
 
 # Passwords
 keys.js
+
+# Images
+*.jpg
+*.jpeg
+*.gif
+*.gifv
+*.png
+*.webm
