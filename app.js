@@ -6,7 +6,11 @@ const keys = require("./keys");
 
 const http = require("https"); // or 'https' for https:// URLs
 const fs = require("fs");
+/*
+TODO: Delete local image after uploading to azure Blob
+TODO: Move Storage Account Key into password file lol
 
+*/
 /* Azure Cognitive Services Variables */
 const COGNITIVE_SERVICES_ENDPOINT =
   "https://c964-josh.cognitiveservices.azure.com/vision";
