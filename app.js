@@ -3,9 +3,9 @@ const express = require("express");
 const app = express();
 const port = process.env.PORT || 3030;
 const keys = require("./keys");
-
-const http = require("https"); // or 'https' for https:// URLs
 const fs = require("fs");
+const CosmosClient = require("@azure/cosmos").CosmosClient;
+
 /*
 TODO: Delete local image after uploading to azure Blob
 TODO: Move Storage Account Key into password file lol
@@ -25,6 +25,13 @@ const FOURCHAN_ENDPOINT = "https://a.4cdn.org/b/catalog.json";
 const FOURCHAN_IMAGES_ENDPOINT = "https://i.4cdn.org/b/";
 const FOURCHAN_MAX_PAGES = 9;
 const FOURCHAN_MAX_THREADS_PER_PAGE = 14;
+
+/* Azure Storage Account and Cosmos DB Variables */
+const COSMOS_DB_ENDPOINT = "https://c964analytics.documents.azure.com:443/";
+const COSMOS_DB_CONNECTION_STRING = keys.cosmosDbConnectionString;
+const client = new CosmosClient(COSMOS_DB_CONNECTION_STRING);
+const database = client.database(keys.cosmosDbDatabaseId);
+const container = database.container(keys.cosmosDbContainerId);
 
 /* Enable ability to parse the body */
 app.use(express.json());
@@ -203,12 +210,75 @@ app.get("/4chanraw", (req, res) => {
                 //console.log("result");
                 //console.log(result);
 
-                /* Once the file has been uploaded, send all data back to the front end */
-                res
-                  .send(cognitiveServicesResponse)
-                  .status(200)
-                  .on("finish", () => {
-                    //console.log("I'm done lol");
+                /* Once the file has been uploaded, update Analytics and send all data back to the front end */
+                let query = {
+                  query: `SELECT * FROM c WHERE c.id="${keys.cosmosDbAnalyticsRecordId}"`,
+                };
+
+                container.items
+                  .query(query)
+                  .fetchAll()
+                  .then((analyticsRecord) => {
+                    //const { id } = analyticsRecord.resources[0];
+
+                    analyticsRecord.resources[0].stats.count++;
+
+                    // If Image is clean, increment clean
+                    if (
+                      cognitiveServicesResponse.adult.isAdultContent ===
+                        false &&
+                      cognitiveServicesResponse.adult.isRacyContent === false &&
+                      cognitiveServicesResponse.adult.isGoryContent == false
+                    ) {
+                      analyticsRecord.resources[0].stats.clean++;
+                    }
+                    // If Image is dirty, update NSFW
+                    else {
+                      analyticsRecord.resources[0].stats.nsfw++;
+                    }
+                    console.log("Got Analytics Record");
+
+                    if (
+                      cognitiveServicesResponse.adult.isAdultContent === true
+                    ) {
+                      analyticsRecord.resources[0].stats.adult++;
+                    }
+
+                    if (
+                      cognitiveServicesResponse.adult.isRacyContent === true
+                    ) {
+                      analyticsRecord.resources[0].stats.sus++;
+                    }
+
+                    if (
+                      cognitiveServicesResponse.adult.isGoryContent === true
+                    ) {
+                      analyticsRecord.resources[0].stats.gore++;
+                    }
+
+                    /* Update Record */
+                    container
+                      .item(keys.cosmosDbAnalyticsRecordId)
+                      .replace(analyticsRecord.resources[0])
+                      .then((result) => {
+                        cognitiveServicesResponse["analytics"] =
+                          analyticsRecord.resources[0].stats;
+
+                        // respond to front-end with pictures and analytics information
+                        res
+                          .send(cognitiveServicesResponse)
+                          .status(200)
+                          .on("finish", () => {
+                            //console.log("I'm done lol");
+                            //delete files off disk lol
+                            try {
+                              fs.unlinkSync(imageName);
+                              //file removed
+                            } catch (err) {
+                              console.error(err);
+                            }
+                          });
+                      });
                   });
               })
               .catch((error) => {
@@ -247,8 +317,35 @@ app.get("/4chanraw", (req, res) => {
         .status(500);
     });
 });
+
 app.listen(port, () => {
   //console.log(`Example app listening at http://localhost:${port}`);
+  let query = {
+    query: `SELECT * FROM c WHERE c.id="${keys.cosmosDbAnalyticsRecordId}"`,
+  };
+
+  container.items
+    .query(query)
+    .fetchAll()
+    .then((ass) => {
+      //const { id } = ass.resources[0];
+      console.log("Finished GET");
+      //console.log(id);
+      //console.log(ass);
+      //console.log(ass.resources[0].id);
+      // ass.resources[0].stats = { adult: 0, sus: 0, gore: 0, nsfw: 0, clean: 0 }
+
+      /* Update Record */
+      //ass.resources[0].stats.adult++;
+
+      container
+        .item(keys.cosmosDbAnalyticsRecordId)
+        .replace(ass.resources[0])
+        .then((result) => {
+          //console.log("Finished UPDATE");
+          //console.log(result);
+        });
+    });
 });
 
 const uploadFileToBlob = async (file) => {
@@ -259,8 +356,7 @@ const uploadFileToBlob = async (file) => {
     newPipeline,
   } = require("@azure/storage-blob");
   const account = "c964imagemirrors";
-  const accountSas =
-    "?sv=2020-02-10&ss=bfqt&srt=sco&sp=rwdlacuptfx&se=2024-06-11T11:58:46Z&st=2021-06-14T03:58:46Z&spr=https&sig=bkIfOKjsCEzHntdJpUd%2BpsSU4lnNA3Lmq1jwhAjzLn4%3D";
+  const accountSas = keys.storageAccountSasKey;
   const localFilePath = file;
   const pipeline = newPipeline(new AnonymousCredential(), {
     // httpClient: MyHTTPClient, // A customized HTTP client implementing IHttpClient interface
