@@ -27,6 +27,7 @@ const FOURCHAN_MAX_PAGES = 9;
 const FOURCHAN_MAX_THREADS_PER_PAGE = 14;
 
 /* Azure Storage Account and Cosmos DB Variables */
+STORAGE_ACCOUNT_NAME = keys.storageAccountName;
 const COSMOS_DB_ENDPOINT = "https://c964analytics.documents.azure.com:443/";
 const COSMOS_DB_CONNECTION_STRING = keys.cosmosDbConnectionString;
 const client = new CosmosClient(COSMOS_DB_CONNECTION_STRING);
@@ -200,7 +201,7 @@ app.get("/4chanraw", (req, res) => {
           cognitiveServicesResponse["4chanimageurl"] = random4chanImage;
           cognitiveServicesResponse[
             "mirrorimageurl"
-          ] = `https://c964imagemirrors.blob.core.windows.net/%24web/${imageName}`;
+          ] = `https://${STORAGE_ACCOUNT_NAME}.blob.core.windows.net/%24web/${imageName}`;
 
           /* Save the 4chan image locally */
           let writer = fs.createWriteStream(imageName).on("close", () => {
@@ -355,7 +356,7 @@ const uploadFileToBlob = async (file) => {
     BlobServiceClient,
     newPipeline,
   } = require("@azure/storage-blob");
-  const account = "c964imagemirrors";
+  const account = `${STORAGE_ACCOUNT_NAME}`;
   const accountSas = keys.storageAccountSasKey;
   const localFilePath = file;
   const pipeline = newPipeline(new AnonymousCredential(), {
