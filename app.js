@@ -277,11 +277,20 @@ app.get("/4chanraw", (req, res) => {
                         cognitiveServicesResponse["analytics"] =
                           analyticsRecord.resources[0].stats;
 
-                        // respond to front-end with pictures and analytics information
-                        res
-                          .send(cognitiveServicesResponse)
-                          .status(200)
-                          .on("finish", () => {
+
+                        cognitiveServicesResponse["imageurl"] = random4chanImage;
+                        axios({
+                          method: "GET",
+                          url: ML_ENDPOINT,
+                          data: {
+                            adultScore: cognitiveServicesResponse.adult.adultScore,
+                            racyScore: cognitiveServicesResponse.adult.racyScore,
+                            goreScore: cognitiveServicesResponse.adult.goreScore
+                        },
+                        }).then((response) => {
+                          // Send response back to the front end
+                          cognitiveServicesResponse["aimlverdict"] = response.data
+                          res.send(cognitiveServicesResponse).status(200).on("finish", () => {
                             //console.log("I'm done lol");
                             //delete files off disk lol
                             try {
@@ -290,8 +299,10 @@ app.get("/4chanraw", (req, res) => {
                             } catch (err) {
                               console.error(err);
                             }
-                          });
-                      });
+                          });;
+                        })
+                      })
+                          
                   });
               })
               .catch((error) => {
