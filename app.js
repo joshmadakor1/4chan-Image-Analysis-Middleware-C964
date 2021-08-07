@@ -138,6 +138,7 @@ app.get("/4chan", (req, res) => {
           },
           }).then((response) => {
             // Send response back to the front end
+            console.log(response.data)
             cognitiveServicesResponse["aimlverdict"] = response.data
             res.send(cognitiveServicesResponse).status(200);
           })
@@ -289,7 +290,8 @@ app.get("/4chanraw", (req, res) => {
                         },
                         }).then((response) => {
                           // Send response back to the front end
-                          cognitiveServicesResponse["aimlverdict"] = response.data
+                          console.log(response.data);
+                          cognitiveServicesResponse["aimlverdict"] = response.data.nsfw
                           res.send(cognitiveServicesResponse).status(200).on("finish", () => {
                             //console.log("I'm done lol");
                             //delete files off disk lol
