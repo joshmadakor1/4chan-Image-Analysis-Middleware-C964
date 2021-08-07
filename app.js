@@ -26,6 +26,9 @@ const FOURCHAN_IMAGES_ENDPOINT = "https://i.4cdn.org/b/";
 const FOURCHAN_MAX_PAGES = 9;
 const FOURCHAN_MAX_THREADS_PER_PAGE = 14;
 
+/* ML Variables */
+const ML_ENDPOINT = "https://c960djangomlapi.azurewebsites.net/analyze"
+
 /* Azure Storage Account and Cosmos DB Variables */
 STORAGE_ACCOUNT_NAME = keys.storageAccountName;
 const COSMOS_DB_ENDPOINT = "https://c964analytics.documents.azure.com:443/";
@@ -123,12 +126,21 @@ app.get("/4chan", (req, res) => {
         data: { url: random4chanImage },
       })
         .then((response) => {
-          /* Get the response from Cognitive Services and append the image URL */
           let cognitiveServicesResponse = response.data;
           cognitiveServicesResponse["imageurl"] = random4chanImage;
-
-          // Send response back to the front end
-          res.send(cognitiveServicesResponse).status(200);
+          axios({
+            method: "GET",
+            url: ML_ENDPOINT,
+            data: {
+              adultScore: cognitiveServicesResponse.adult.adultScore,
+              racyScore: cognitiveServicesResponse.adult.racyScore,
+              goreScore: cognitiveServicesResponse.adult.goreScore
+          },
+          }).then((response) => {
+            // Send response back to the front end
+            cognitiveServicesResponse["aimlverdict"] = response.data
+            res.send(cognitiveServicesResponse).status(200);
+          })
         })
         .catch((azureError) => {
           res.send({
