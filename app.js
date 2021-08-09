@@ -5,6 +5,7 @@ const port = process.env.PORT || 3030;
 const keys = require("./keys");
 const fs = require("fs");
 const CosmosClient = require("@azure/cosmos").CosmosClient;
+const { send } = require("process");
 
 /*
 TODO: Delete local image after uploading to azure Blob
@@ -27,7 +28,7 @@ const FOURCHAN_MAX_PAGES = 9;
 const FOURCHAN_MAX_THREADS_PER_PAGE = 14;
 
 /* ML Variables */
-const ML_ENDPOINT = "https://c960djangomlapi.azurewebsites.net/analyze"
+const ML_ENDPOINT = "https://c960djangomlapi.azurewebsites.net/analyze";
 
 /* Azure Storage Account and Cosmos DB Variables */
 STORAGE_ACCOUNT_NAME = keys.storageAccountName;
@@ -134,14 +135,14 @@ app.get("/4chan", (req, res) => {
             data: {
               adultScore: cognitiveServicesResponse.adult.adultScore,
               racyScore: cognitiveServicesResponse.adult.racyScore,
-              goreScore: cognitiveServicesResponse.adult.goreScore
-          },
+              goreScore: cognitiveServicesResponse.adult.goreScore,
+            },
           }).then((response) => {
             // Send response back to the front end
-            console.log(response.data)
-            cognitiveServicesResponse["aimlverdict"] = response.data
+            console.log(response.data);
+            cognitiveServicesResponse["aimlverdict"] = response.data;
             res.send(cognitiveServicesResponse).status(200);
-          })
+          });
         })
         .catch((azureError) => {
           res.send({
@@ -278,33 +279,39 @@ app.get("/4chanraw", (req, res) => {
                         cognitiveServicesResponse["analytics"] =
                           analyticsRecord.resources[0].stats;
 
-
-                        cognitiveServicesResponse["imageurl"] = random4chanImage;
+                        cognitiveServicesResponse["imageurl"] =
+                          random4chanImage;
                         axios({
                           method: "GET",
                           url: ML_ENDPOINT,
                           data: {
-                            adultScore: cognitiveServicesResponse.adult.adultScore,
-                            racyScore: cognitiveServicesResponse.adult.racyScore,
-                            goreScore: cognitiveServicesResponse.adult.goreScore
-                        },
+                            adultScore:
+                              cognitiveServicesResponse.adult.adultScore,
+                            racyScore:
+                              cognitiveServicesResponse.adult.racyScore,
+                            goreScore:
+                              cognitiveServicesResponse.adult.goreScore,
+                          },
                         }).then((response) => {
                           // Send response back to the front end
                           console.log(response.data);
-                          cognitiveServicesResponse["aimlverdict"] = response.data.nsfw
-                          res.send(cognitiveServicesResponse).status(200).on("finish", () => {
-                            //console.log("I'm done lol");
-                            //delete files off disk lol
-                            try {
-                              fs.unlinkSync(imageName);
-                              //file removed
-                            } catch (err) {
-                              console.error(err);
-                            }
-                          });;
-                        })
-                      })
-                          
+                          cognitiveServicesResponse["aimlverdict"] =
+                            response.data.nsfw;
+                          res
+                            .send(cognitiveServicesResponse)
+                            .status(200)
+                            .on("finish", () => {
+                              //console.log("I'm done lol");
+                              //delete files off disk lol
+                              try {
+                                fs.unlinkSync(imageName);
+                                //file removed
+                              } catch (err) {
+                                console.error(err);
+                              }
+                            });
+                        });
+                      });
                   });
               })
               .catch((error) => {
@@ -344,6 +351,143 @@ app.get("/4chanraw", (req, res) => {
     });
 });
 
+app.get("/custom", (req, res) => {
+  let random4chanImage = req.body.url;
+  let imageName =
+    Math.random()
+      .toString(36)
+      .replace(/[^a-z]+/g, "")
+      .substr(0, 10) +
+    "." +
+    random4chanImage.split(/[#?]/)[0].split(".").pop().trim();
+  axios({
+    method: "POST",
+    headers: AZURE_HEADERS,
+    url: AZURE_FULL_URL,
+    data: { url: random4chanImage },
+  })
+    .then((response) => {
+      /* Get the response from Cognitive Services and append the image URL */
+      let cognitiveServicesResponse = response.data;
+      cognitiveServicesResponse["4chanimageurl"] = random4chanImage;
+      cognitiveServicesResponse[
+        "mirrorimageurl"
+      ] = `https://${STORAGE_ACCOUNT_NAME}.blob.core.windows.net/%24web/${imageName}`;
+
+      /* Save the 4chan image locally */
+      let writer = fs.createWriteStream(imageName).on("close", () => {
+        /* Once the file has been saved locally, Upload a mirror to Azure Storage Account */
+        uploadFileToBlob(imageName)
+          .then((result) => {
+            //console.log("result");
+            //console.log(result);
+
+            /* Once the file has been uploaded, update Analytics and send all data back to the front end */
+            let query = {
+              query: `SELECT * FROM c WHERE c.id="${keys.cosmosDbAnalyticsRecordId}"`,
+            };
+
+            container.items
+              .query(query)
+              .fetchAll()
+              .then((analyticsRecord) => {
+                //const { id } = analyticsRecord.resources[0];
+
+                analyticsRecord.resources[0].stats.count++;
+
+                // If Image is clean, increment clean
+                if (
+                  cognitiveServicesResponse.adult.isAdultContent === false &&
+                  cognitiveServicesResponse.adult.isRacyContent === false &&
+                  cognitiveServicesResponse.adult.isGoryContent == false
+                ) {
+                  analyticsRecord.resources[0].stats.clean++;
+                }
+                // If Image is dirty, update NSFW
+                else {
+                  analyticsRecord.resources[0].stats.nsfw++;
+                }
+                console.log("Got Analytics Record");
+
+                if (cognitiveServicesResponse.adult.isAdultContent === true) {
+                  analyticsRecord.resources[0].stats.adult++;
+                }
+
+                if (cognitiveServicesResponse.adult.isRacyContent === true) {
+                  analyticsRecord.resources[0].stats.sus++;
+                }
+
+                if (cognitiveServicesResponse.adult.isGoryContent === true) {
+                  analyticsRecord.resources[0].stats.gore++;
+                }
+
+                /* Update Record */
+                container
+                  .item(keys.cosmosDbAnalyticsRecordId)
+                  .replace(analyticsRecord.resources[0])
+                  .then((result) => {
+                    cognitiveServicesResponse["analytics"] =
+                      analyticsRecord.resources[0].stats;
+
+                    cognitiveServicesResponse["imageurl"] = random4chanImage;
+                    axios({
+                      method: "GET",
+                      url: ML_ENDPOINT,
+                      data: {
+                        adultScore: cognitiveServicesResponse.adult.adultScore,
+                        racyScore: cognitiveServicesResponse.adult.racyScore,
+                        goreScore: cognitiveServicesResponse.adult.goreScore,
+                      },
+                    }).then((response) => {
+                      // Send response back to the front end
+                      console.log(response.data);
+                      cognitiveServicesResponse["aimlverdict"] =
+                        response.data.nsfw;
+                      res
+                        .send(cognitiveServicesResponse)
+                        .status(200)
+                        .on("finish", () => {
+                          //console.log("I'm done lol");
+                          //delete files off disk lol
+                          try {
+                            fs.unlinkSync(imageName);
+                            //file removed
+                          } catch (err) {
+                            console.error(err);
+                          }
+                        });
+                    });
+                  });
+              });
+          })
+          .catch((error) => {
+            console.log(error);
+            /* If something messed up, send an error back */
+            res.send(error).status(500);
+          });
+
+        /* After Image was sent to azure Storage, delete it locally and send new URL back to client */
+      });
+
+      axios({
+        url: random4chanImage,
+        method: "GET",
+        responseType: "stream",
+      }).then((response) => {
+        response.data.pipe(writer);
+
+        //cognitiveServicesResponse["imagedata"] = response.data;
+        // Send response back to the front end
+      });
+    })
+    .catch((azureError) => {
+      res.send({
+        error: azureError.message,
+        details: azureError,
+        platform: "azureapi",
+      });
+    });
+});
 app.listen(port, () => {
   //console.log(`Example app listening at http://localhost:${port}`);
   let query = {
