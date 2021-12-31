@@ -4,7 +4,7 @@
  - [YouTube Demonstration](https://youtu.be/7eJexJVCqJo)
  
 ```diff
-- WARNING: Live images are being pulled from 4chan for analysis and contain NSFW content ~33% of the time
+- WARNING: Live images are being pulled from 4chan for analysis and often contain NSFW content
 ```
 
 <h2>Description</h2>
