@@ -1,11 +1,16 @@
 <h1>4chan Image Analysis Middleware</h1>
 
- - [Live Project](https://c964imagemirrors.z5.web.core.windows.net/)
- - [YouTube Demonstration](https://youtu.be/7eJexJVCqJo)
+
+ ### [Live Project](https://c964imagemirrors.z5.web.core.windows.net/)
+ ### [YouTube Demonstration](https://youtu.be/7eJexJVCqJo)
+
+<h2>
  
 ```diff
-- WARNING: Live images are being pulled from 4chan for analysis and often contain NSFW content
+- WARNING (NSFW): Live images will be pulled from 4chan.
 ```
+ 
+ </h2>
 
 <h2>Description</h2>
 Project consists of a single-page application (SPA) which grabs a random image from 4chan, runs the image through the analysis pipeline and displays the results. The results contain the image classifications retrieved from Azure Cognitive Services Computer Vision as well as the final decision (SFW or NSFW) from my trained ML model, given the Computer Vision classifications. The web application blurs the image upon initial display but allows you to un-blur it by clicking.
