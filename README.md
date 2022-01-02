@@ -1,42 +1,50 @@
-<h1>4chan Image Analysis Middleware</h1>
+<h1>JWipe - Disk Sanitization</h1>
 
-
- ### [Live Project](https://c964imagemirrors.z5.web.core.windows.net/)
  ### [YouTube Demonstration](https://youtu.be/7eJexJVCqJo)
 
-<h2>
- 
-```diff
-- WARNING (NSFW): Live images will be pulled from 4chan.
-```
- 
- </h2>
-
 <h2>Description</h2>
-Project consists of a single-page application (SPA) which grabs a random image from 4chan, runs the image through the analysis pipeline and displays the results. The results contain the image classifications retrieved from Azure Cognitive Services Computer Vision as well as the final decision (SFW or NSFW) from my trained ML model, given the Computer Vision classifications. The web application blurs the image upon initial display but allows you to un-blur it by clicking.
+Project consists of a simple PowerShell script that walks the user through "zeroing out" (wiping) any drives that are connected to the system. The utility allows you to select the target disk and choose the number of passes that are performed. The PowerShell script will configure a diskpart script file based on the user's selections and then launch Diskpart to peform the disk sanitization.
 <br />
-<br />
+
+
+<h2>Languages and Utilities Used</h2>
+
+- <b>PowerShell</b> 
+- <b>Diskpart</b>
+
+<h2>Environments Used </h2>
+
+- <b>Windows 10</b> (21H2)
+
+<h2>Program walk-through:</h2>
 
 <p align="center">
-<img src="https://i.imgur.com/Q46tijN.png" height="65%" width="65%" alt="Frankie Grande, Ariana Grande et al. are posing for a picture"/>
-</p>
-<h2>Languages Used</h2>
-
-- <b>Python Django (backend):</b> scikit-learn ML model 
-- <b>[Node.JS (backend):](https://github.com/joshmadakor1/4chan-Image-Analysis-Middleware-C964)</b> control data flow between all components
-- <b>[React (frontend):](https://github.com/joshmadakor1/C964-WGU-BSCS-Capstone-React)</b> single page application (SPA)
-
-<h2>Environments Used (PaaS Components)</h2>
-
-- <b>Azure App Service:</b> hosting Node.JS and Django components
-- <b>Azure Storage Account:</b> running React Static Page
-- <b>Azure Cosmos DB:</b> Storage SFW/NSFW analytics and historical data
-- <b>Azure Cognitive Services:</b> Used to general data used for SFW/NSFW decision
-
-<h2>Image Analysis Dataflow</h2>
-
-<p align="center">
-<img src="https://i.imgur.com/UeNTKzL.png" height="65%" width="65%" alt="Image Analysis Dataflow"/>
+Launch the utility: <br/>
+<img src="https://i.imgur.com/62TgaWL.png" height="80%" width="80%" alt="Disk Sanitization Steps"/>
+<br />
+<br />
+Select the disk:  <br/>
+<img src="https://i.imgur.com/tcTyMUE.png" height="80%" width="80%" alt="Disk Sanitization Steps"/>
+<br />
+<br />
+Enter the number of passes: <br/>
+<img src="https://i.imgur.com/nCIbXbg.png" height="80%" width="80%" alt="Disk Sanitization Steps"/>
+<br />
+<br />
+Confirm your selection:  <br/>
+<img src="https://i.imgur.com/cdFHBiU.png" height="80%" width="80%" alt="Disk Sanitization Steps"/>
+<br />
+<br />
+Wait for process to complete (may take some time):  <br/>
+<img src="https://i.imgur.com/JL945Ga.png" height="80%" width="80%" alt="Disk Sanitization Steps"/>
+<br />
+<br />
+Sanitization complete:  <br/>
+<img src="https://i.imgur.com/K71yaM2.png" height="80%" width="80%" alt="Disk Sanitization Steps"/>
+<br />
+<br />
+Observe the wiped disk:  <br/>
+<img src="https://i.imgur.com/AeZkvFQ.png" height="80%" width="80%" alt="Disk Sanitization Steps"/>
 </p>
 
 <!--
