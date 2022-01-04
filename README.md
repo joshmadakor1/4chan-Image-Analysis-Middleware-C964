@@ -33,7 +33,7 @@ Project consists of a single-page application (SPA) which grabs a random image f
 - <b>Azure Cosmos DB:</b> Storage SFW/NSFW analytics and historical data
 - <b>Azure Cognitive Services:</b> Used to general data used for SFW/NSFW decision
 
-<h2>Image Analysis Dataflow</h2>
+<h2>Image Analysis Data Flow</h2>
 
 <p align="center">
 <img src="https://i.imgur.com/UeNTKzL.png" height="65%" width="65%" alt="Image Analysis Dataflow"/>
