@@ -1,4 +1,4 @@
-<h1>4chan Image Analysis Middleware</h1>
+<h1>NSFW Image Analysis Middleware</h1>
 
 
  ### [Live Project](https://c964imagemirrors.z5.web.core.windows.net/)
@@ -7,7 +7,7 @@
 <h2>
  
 ```diff
-- WARNING (NSFW): Live images will be pulled from 4chan.
+- WARNING (NSFW): RANDOM live images will be pulled from potentially NSFW location.
 ```
  
  </h2>
