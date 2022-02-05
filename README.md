@@ -7,8 +7,7 @@
 <h2>
  
 ```diff
-- WARNING (NSFW): RANDOM live images will be pulled from
-- potentially NSFW location.
+- WARNING (NSFW): RANDOM live images will be pulled from NSFW location.
 ```
  
  </h2>
